@@ -73,45 +73,17 @@ enum client_errors {
     /// Got packet bigger than 'max_allowed_packet' bytes
     net_packet_too_large = CR_NET_PACKET_TOO_LARGE,
 
-    /// Embedded server
-    embedded_connection = CR_EMBEDDED_CONNECTION,
-
-    /// Error on SHOW SLAVE STATUS
-    probe_slave_status = CR_PROBE_SLAVE_STATUS,
-
-    /// Error on SHOW SLAVE HOSTS
-    probe_slave_hosts = CR_PROBE_SLAVE_HOSTS,
-
-    /// Error connecting to slave
-    probe_slave_connect = CR_PROBE_SLAVE_CONNECT,
-
-    /// Error connecting to master
-    probe_master_connect = CR_PROBE_MASTER_CONNECT,
-
     /// SSL connection error
     ssl_connection_error = CR_SSL_CONNECTION_ERROR,
 
     /// Malformed packet
     malformed_packet = CR_MALFORMED_PACKET,
 
-    /// This client library is licensed only for use with MySQL servers having
-    /// '%s' license
-    wrong_license = CR_WRONG_LICENSE,
-
-    /// Invalid use of null pointer
-    null_pointer = CR_NULL_POINTER,
-
     /// Statement not prepared
     no_prepare_stmt = CR_NO_PREPARE_STMT,
 
     /// No data supplied for parameters in prepared statement
     params_not_bound = CR_PARAMS_NOT_BOUND,
-
-    /// Data truncated
-    data_truncated = CR_DATA_TRUNCATED,
-
-    /// No parameters exist in the statement
-    no_parameters_exists = CR_NO_PARAMETERS_EXISTS,
 
     /// Invalid parameter number
     invalid_parameter_no = CR_INVALID_PARAMETER_NO,
@@ -126,60 +98,15 @@ enum client_errors {
     /// Shared memory: %-.100s
     shared_memory_connection = CR_SHARED_MEMORY_CONNECTION,
 
-    /// Can't open shared memory; client could not create request event (%lu)
-    shared_memory_connect_request_error =
-        CR_SHARED_MEMORY_CONNECT_REQUEST_ERROR,
-
-    /// Can't open shared memory; no answer event received from server (%lu)
-    shared_memory_connect_answer_error = CR_SHARED_MEMORY_CONNECT_ANSWER_ERROR,
-
-    /// Can't open shared memory; server could not allocate file mapping (%lu)
-    shared_memory_connect_file_map_error =
-        CR_SHARED_MEMORY_CONNECT_FILE_MAP_ERROR,
-
-    /// Can't open shared memory; server could not get pointer to file mapping
-    /// (%lu)
-    shared_memory_connect_map_error = CR_SHARED_MEMORY_CONNECT_MAP_ERROR,
-
-    /// Can't open shared memory; client could not allocate file mapping (%lu)
-    shared_memory_file_map_error = CR_SHARED_MEMORY_FILE_MAP_ERROR,
-
-    /// Can't open shared memory; client could not get pointer to file mapping
-    /// (%lu)
-    shared_memory_map_error = CR_SHARED_MEMORY_MAP_ERROR,
-
-    /// Can't open shared memory; client could not create %s event (%lu)
-    shared_memory_event_error = CR_SHARED_MEMORY_EVENT_ERROR,
-
-    /// Can't open shared memory; no answer from server (%lu)
-    shared_memory_connect_abandoned_error =
-        CR_SHARED_MEMORY_CONNECT_ABANDONED_ERROR,
-
-    /// Can't open shared memory; cannot send request event to server (%lu)
-    shared_memory_connect_set_error = CR_SHARED_MEMORY_CONNECT_SET_ERROR,
-
-    /// Wrong or unknown protocol
-    conn_unknow_protocol = CR_CONN_UNKNOW_PROTOCOL,
-
-    /// Invalid connection handle
-    invalid_conn_handle = CR_INVALID_CONN_HANDLE,
-
     /// Connection using old (pre-4.1.1) authentication protocol refused
     /// (client option 'secure_auth' enabled)
     secure_auth = MYSQL_SECURE_AUTH,
-
-    /// Row retrieval was canceled by mysql_stmt_close() call
-    fetch_canceled = CR_FETCH_CANCELED,
 
     /// Attempt to read column without prior row fetch
     no_data = CR_NO_DATA,
 
     /// Prepared statement contains no metadata
     no_stmt_metadata = CR_NO_STMT_METADATA,
-
-    /// Attempt to read a row while there is no result set associated with the
-    /// statement
-    no_result_set = CR_NO_RESULT_SET,
 
     /// This feature is not implemented yet
     not_implemented = CR_NOT_IMPLEMENTED,
@@ -293,44 +220,17 @@ public:
             case net_packet_too_large:
                 return "Got packet bigger than 'max_allowed_packet' bytes";
 
-            case embedded_connection:
-                return "Embedded server";
-
-            case probe_slave_status:
-                return "Error on SHOW SLAVE STATUS";
-
-            case probe_slave_hosts:
-                return "Error on SHOW SLAVE HOSTS";
-
-            case probe_slave_connect:
-                 return "Error connecting to slave";
-
-            case probe_master_connect:
-                return "Error connecting to master";
-
             case ssl_connection_error:
                 return "SSL connection error";
 
             case malformed_packet:
                 return "Malformed packet";
 
-            case wrong_license:
-                return "This client library has wrong license";
-
-            case null_pointer:
-                return "Invalid use of null pointer";
-
             case no_prepare_stmt:
                 return "Statement not prepared";
 
             case params_not_bound:
                 return "No data supplied for parameters in prepared statement";
-
-            case data_truncated:
-                return "Data truncated";
-
-            case no_parameters_exists:
-                return "No parameters exist in the statement";
 
             case invalid_parameter_no:
                 return "Invalid parameter number";
@@ -344,63 +244,15 @@ public:
             case shared_memory_connection:
                 return "Shared memory connection failed";
 
-            case shared_memory_connect_request_error:
-                return "Can't open shared memory; client could not create "
-                       "request event";
-
-            case shared_memory_connect_answer_error:
-                return "Can't open shared memory; no answer event received "
-                       "from server";
-
-            case shared_memory_connect_file_map_error:
-                return "Can't open shared memory; server could not allocate "
-                       "file mapping";
-
-            case shared_memory_connect_map_error:
-                return "Can't open shared memory; server could not get pointer "
-                       "to file mapping";
-
-            case shared_memory_file_map_error:
-                return "Can't open shared memory; client could not allocate "
-                       "file mapping";
-
-            case shared_memory_map_error:
-                return "Can't open shared memory; client could not get pointer "
-                       "to file mapping";
-
-            case shared_memory_event_error:
-                return "Can't open shared memory; client could not create "
-                       "event";
-
-            case shared_memory_connect_abandoned_error:
-                return "Can't open shared memory; no answer from server";
-
-            case shared_memory_connect_set_error:
-                return "Can't open shared memory; cannot send request event to "
-                       "server";
-
-            case conn_unknow_protocol:
-                return "Wrong or unknown protocol";
-
-            case invalid_conn_handle:
-                return "Invalid connection handle";
-
             case secure_auth:
                 return "Connection using old (pre-4.1.1) authentication "
                        "protocol refused (client option 'secure_auth' enabled)";
-
-            case fetch_canceled:
-                return "Row retrieval was canceled by mysql_stmt_close() call";
 
             case no_data:
                 return "Attempt to read column without prior row fetch";
 
             case no_stmt_metadata:
                 return "Prepared statement contains no metadata";
-
-            case no_result_set:
-                return "Attempt to read a row while there is no result set "
-                       "associated with the statement";
 
             case not_implemented:
                 return "This feature is not implemented yet";
