@@ -55,11 +55,6 @@ inline bool value_cast(const char* s, unsigned long) {
 }
 
 template<>
-inline unsigned long long value_cast(const char* s, unsigned long) {
-    return std::strtoull(s, NULL, 10);
-}
-
-template<>
 inline unsigned long value_cast(const char* s, unsigned long) {
     return std::strtoul(s, NULL, 10);
 }
@@ -146,6 +141,13 @@ template<>
 inline sql_bigint_unsigned value_cast(const char* s, unsigned long) {
     sql_bigint_unsigned v = ::_strtoui64(s, NULL, 10);
     return v;
+}
+
+#else
+	
+template<>
+inline unsigned long long value_cast(const char* s, unsigned long) {
+    return std::strtoull(s, NULL, 10);
 }
 
 #endif // ifdef WIN32
