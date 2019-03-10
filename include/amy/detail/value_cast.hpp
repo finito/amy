@@ -93,7 +93,7 @@ template<>
 inline sql_datetime value_cast(const char* s, unsigned long l) {
     using namespace boost::posix_time;
 
-    std::istringstream in({s, l});
+    std::istringstream in(std::string{s, l});
     in.unsetf(std::ios::skipws);
     in.imbue(std::locale(std::locale::classic(),
                          new time_input_facet("%Y-%m-%d %H:%M:%S%F")));
@@ -119,7 +119,7 @@ inline sql_time value_cast(const char* str, unsigned long len) {
     time_input_facet* input_facet = new time_input_facet();
     input_facet->time_duration_format("%H:%M:%S:%F");
 
-    std::istringstream in({str, len});
+    std::istringstream in(std::string{str, len});
     in.unsetf(std::ios::skipws);
     in.imbue(std::locale(std::locale::classic(), input_facet));
 
