@@ -64,7 +64,6 @@ mysql_get_timeout_value().
  */
 
 using ::mysql_close_cont;
-using ::mysql_close_slow_part;
 using ::mysql_close_start;
 using ::mysql_free_result_cont;
 using ::mysql_free_result_start;
