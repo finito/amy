@@ -11,6 +11,7 @@
 #include <memory>
 #include <mutex>
 #include <thread>
+#include <vector>
 
 namespace amy {
 
@@ -26,6 +27,9 @@ public:
 
     template<typename QueryHandler>
     class query_handler;
+
+    template<typename QueriesHandler>
+    class queries_handler;
 
     template<typename StoreResultHandler>
     class store_result_handler;
@@ -87,6 +91,11 @@ public:
     void async_query(implementation_type& impl,
                      std::string const& stmt,
                      QueryHandler handler);
+
+    template<typename Handler>
+    void async_queries(implementation_type& impl,
+                     std::vector<std::string>const& stmt,
+                     Handler handler);
 
     bool has_more_results(implementation_type const& impl) const;
 
@@ -218,6 +227,21 @@ private:
     std::string stmt_;
 
 }; // class mysql_service::query_handler
+
+template<typename QueriesHandler>
+class mysql_service::queries_handler : public handler_base<QueriesHandler> {
+public:
+    explicit queries_handler(implementation_type& impl,
+                           std::vector<std::string>const& stmts,
+                           AMY_ASIO_NS::io_service& io_service,
+                           QueriesHandler handler);
+
+    void operator()();
+
+private:
+    std::vector<std::string> stmts_;
+
+}; // class mysql_service::queries_handler
 
 template<typename StoreResultHandler>
 class mysql_service::store_result_handler :

@@ -189,6 +189,23 @@ void mysql_service::async_query(implementation_type& impl,
     }
 }
 
+template<typename Handler>
+void mysql_service::async_queries(implementation_type& impl,
+                                std::vector<std::string>const& stmts,
+                                Handler handler)
+{
+    if (!is_open(impl)) {
+        this->get_io_service().post(
+                std::bind(handler, amy::error::not_initialized));
+    } else {
+        if (!!work_io_service_) {
+            start_work_thread();
+            work_io_service_->post(queries_handler<Handler>(
+                        impl, stmts, this->get_io_service(), handler));
+        }
+    }
+}
+
 inline bool
 mysql_service::has_more_results(implementation_type const& impl) const {
     namespace ops = amy::detail::mysql_ops;
@@ -442,6 +459,73 @@ void mysql_service::query_handler<QueryHandler>::operator()() {
                           stmt_.c_str(),
                           stmt_.length(),
                           ec);
+
+    this->io_service_.post(std::bind(this->handler_, ec));
+}
+
+template<typename QueriesHandler>
+mysql_service::queries_handler<QueriesHandler>::queries_handler(
+        implementation_type& impl,
+        std::vector<std::string>const& stmts,
+        AMY_ASIO_NS::io_service& io_service,
+        QueriesHandler handler)
+  : handler_base<QueriesHandler>(impl, io_service, handler),
+    stmts_(stmts)
+{}
+
+template<typename QueriesHandler>
+void mysql_service::queries_handler<QueriesHandler>::operator()() {
+    using namespace amy::error;
+    namespace ops = amy::detail::mysql_ops;
+
+    if (this->cancelation_token_.expired()) {
+        this->io_service_.post(
+                std::bind(this->handler_,
+                          AMY_ASIO_NS::error::operation_aborted));
+        return;
+    }
+
+    this->impl_.free_result();
+    this->impl_.first_result_stored = false;
+
+	static const std::string start_stmt = "START TRANSACTION";
+	static const std::string rollback_stmt = "ROLLBACK";
+	static const std::string commit_stmt = "COMMIT";
+
+	AMY_SYSTEM_NS::error_code ec;
+
+	ops::mysql_real_query(&this->impl_.mysql,
+						  start_stmt.c_str(),
+						  start_stmt.length(),
+						  ec);
+	if (!ec)
+	{
+		for (const auto& stmt : stmts_)
+		{
+			ops::mysql_real_query(&this->impl_.mysql,
+								  stmt.c_str(),
+								  stmt.length(),
+								  ec);
+			if (ec)
+			{
+				AMY_SYSTEM_NS::error_code rollback_ec;
+				ops::mysql_real_query(&this->impl_.mysql,
+									  rollback_stmt.c_str(),
+									  rollback_stmt.length(),
+									  rollback_ec);
+				// ignore rollback ec, want to retain the ec of stmt not the rollback
+				break;
+			}
+		}
+
+		if (!ec)
+		{
+			ops::mysql_real_query(&this->impl_.mysql,
+								  commit_stmt.c_str(),
+								  commit_stmt.length(),
+								  ec);
+		}
+	}
 
     this->io_service_.post(std::bind(this->handler_, ec));
 }

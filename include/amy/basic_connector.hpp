@@ -8,6 +8,8 @@
 #include <amy/client_flags.hpp>
 #include <amy/result_set.hpp>
 
+#include <vector>
+
 namespace amy {
 
 /// Provides MySQL client functionalities.
@@ -151,6 +153,19 @@ public:
 
         return init.result.get();
     }
+
+	template<typename Handler>
+    BOOST_ASIO_INITFN_RESULT_TYPE(Handler,
+        void (AMY_SYSTEM_NS::error_code))
+	async_queries(std::vector<std::string>const& stmts, Handler handler) {
+        AMY_ASIO_NS::async_completion<Handler,
+            void (AMY_SYSTEM_NS::error_code)> init(handler);
+
+		this->get_service().async_queries(
+			this->get_implementation(), stmts, init.completion_handler);
+
+		return init.result.get();
+	}
 
     template<typename Handler>
     BOOST_ASIO_INITFN_RESULT_TYPE(Handler,
