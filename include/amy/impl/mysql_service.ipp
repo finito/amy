@@ -276,6 +276,26 @@ void mysql_service::async_store_result(implementation_type& impl,
     }
 }
 
+template<typename QueryResultHandler>
+void mysql_service::async_query_result(implementation_type& impl,
+                                std::string const& stmt, 
+                                QueryResultHandler handler)
+{
+    if (!is_open(impl)) {
+        this->get_io_service().post(
+                std::bind(handler,
+				          amy::error::not_initialized,
+						  result_set::empty_set(&impl.mysql)));
+    } else {
+        if (!!work_io_service_) {
+            start_work_thread();
+            work_io_service_->post(
+					query_result_handler<QueryResultHandler>(
+                        impl, stmt, this->get_io_service(), handler));
+        }
+    }
+}
+
 inline AMY_SYSTEM_NS::error_code
 mysql_service::autocommit(implementation_type& impl,
                           bool mode,
@@ -587,6 +607,58 @@ void mysql_service::store_result_handler<StoreResultHandler>::operator()() {
     rs.assign(&this->impl_.mysql, this->impl_.last_result, ec);
 
     this->io_service_.post(std::bind(this->handler_, ec, rs));
+}
+
+template<typename QueryResultHandler>
+mysql_service::query_result_handler<QueryResultHandler>::query_result_handler(
+        implementation_type& impl,
+        std::string const& stmt,
+        AMY_ASIO_NS::io_service& io_service,
+        QueryResultHandler handler)
+  : handler_base<QueryResultHandler>(impl, io_service, handler),
+    stmt_(stmt)
+{}
+
+template<typename QueryResultHandler>
+void mysql_service::query_result_handler<QueryResultHandler>::operator()() {
+    using namespace amy::error; 
+    namespace ops = amy::detail::mysql_ops;
+
+    if (this->cancelation_token_.expired()) {
+        this->io_service_.post(
+                std::bind(this->handler_,
+                          AMY_ASIO_NS::error::operation_aborted,
+						  result_set::empty_set(&this->impl_.mysql)));
+        return;
+    }
+
+    this->impl_.free_result();
+    this->impl_.first_result_stored = false;
+
+    AMY_SYSTEM_NS::error_code ec;
+    ops::mysql_real_query(&this->impl_.mysql,
+                          stmt_.c_str(),
+                          stmt_.length(),
+                          ec);
+
+    if (ec) {
+        // If anything went wrong, invokes the user-defined handler with the
+        // error code and an empty result set.
+        this->io_service_.post(
+                std::bind(this->handler_,
+                          ec,
+                          result_set::empty_set(&this->impl_.mysql)));
+        return;
+    }
+
+	this->impl_.last_result.reset(
+			ops::mysql_store_result(&this->impl_.mysql, ec),
+			result_set_deleter());
+
+	result_set rs;
+	rs.assign(&this->impl_.mysql, this->impl_.last_result, ec);
+
+	this->io_service_.post(std::bind(this->handler_, ec, rs));
 }
 
 inline void mysql_service::result_set_deleter::operator()(void* p) {

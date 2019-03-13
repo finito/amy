@@ -27,12 +27,15 @@ public:
 
     template<typename QueryHandler>
     class query_handler;
-
+	
     template<typename QueriesHandler>
     class queries_handler;
 
     template<typename StoreResultHandler>
     class store_result_handler;
+
+    template<typename QueryResultHandler>
+    class query_result_handler;
 
     typedef implementation implementation_type;
 
@@ -105,6 +108,11 @@ public:
     template<typename StoreResultHandler>
     void async_store_result(implementation_type& impl,
                             StoreResultHandler handler);
+							
+    template<typename QueryResultHandler>
+    void async_query_result(implementation_type& impl,
+                     std::string const& stmt,
+                     QueryResultHandler handler);
 
     AMY_SYSTEM_NS::error_code autocommit(implementation_type& impl,
                                          bool mode,
@@ -255,6 +263,21 @@ public:
     void operator()();
 
 }; // class mysql_service::store_result_handler
+
+template<typename QueryResultHandler>
+class mysql_service::query_result_handler : public handler_base<QueryResultHandler> {
+public:
+    explicit query_result_handler(implementation_type& impl,
+                           std::string const& stmt,
+                           AMY_ASIO_NS::io_service& io_service,
+                           QueryResultHandler handler);
+
+    void operator()();
+
+private:
+    std::string stmt_;
+
+}; // class mysql_service::query_result_handler
 
 struct mysql_service::result_set_deleter {
     void operator()(void* p);
