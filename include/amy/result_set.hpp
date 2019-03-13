@@ -44,26 +44,38 @@ public:
     typedef std::vector<field_info> fields_info_type;
 
     explicit result_set() :
-        mysql_(nullptr),
+		mysql_(nullptr),
+		row_count_(0),
+		affected_rows_(0),
+		field_count_(0),
         values_(new values_type),
         fields_info_(new fields_info_type)
     {}
 
     result_set(result_set const& other) :
-        mysql_(other.mysql_),
+		mysql_(other.mysql_),
+		row_count_(other.row_count_),
+		affected_rows_(other.affected_rows_),
+		field_count_(other.field_count_),
         result_set_(other.result_set_),
         values_(other.values_),
         fields_info_(other.fields_info_)
     {}
 
     explicit result_set(native_mysql_type mysql) :
-        mysql_(mysql),
+		mysql_(mysql),
         values_(new values_type()),
+		row_count_(0),
+		affected_rows_(0),
+		field_count_(0),
         fields_info_(new fields_info_type)
     {}
 
     result_set const& operator=(result_set const& other) {
-        mysql_ = other.mysql_;
+		mysql_ = other.mysql_;
+		row_count_ = other.row_count_,
+		affected_rows_ = other.affected_rows_,
+		field_count_ = other.field_count_,
         result_set_ = other.result_set_;
         values_ = other.values_;
         fields_info_ = other.fields_info_;
@@ -86,23 +98,21 @@ public:
     {
         namespace ops = amy::detail::mysql_ops;
 
-        mysql_ = mysql;
-
         if (!rs) {
             return ec;
         }
 
         result_set_ = rs;
-        uint64_t row_count = ops::mysql_num_rows(rs.get());
+        row_count_ = ops::mysql_num_rows(rs.get());
 
-        if (row_count == 0) {
+        if (row_count_ == 0) {
             return ec;
         }
 
         // Fetch fields information.
-        uint32_t field_count = ops::mysql_num_fields(rs.get());
+        field_count_ = ops::mysql_num_fields(rs.get());
         fields_info_.reset(new fields_info_type);
-        fields_info_->reserve(field_count);
+        fields_info_->reserve(field_count_);
         detail::field_handle f = nullptr;
 
         while ((f = ops::mysql_fetch_field(rs.get()))) {
@@ -110,19 +120,22 @@ public:
         }
 
         // Fetch rows.
-        values_->reserve(static_cast<size_t>(row_count));
+        values_->reserve(static_cast<size_t>(row_count_));
         detail::row_type r;
 
-        while ((r = ops::mysql_fetch_row(mysql_, rs.get(), ec))) {
+        while ((r = ops::mysql_fetch_row(mysql, rs.get(), ec))) {
             unsigned long* lengths = ops::mysql_fetch_lengths(rs.get());
             values_->push_back(row(rs.get(), r, lengths, fields_info_));
         }
 
         if (ec) {
+			row_count_ = 0;
             values_.reset();
             fields_info_.reset();
             result_set_.reset();
-        }
+        } else {
+			affected_rows_ = detail::mysql_ops::mysql_affected_rows(mysql);
+		}
 
         return ec;
     }
@@ -178,11 +191,11 @@ public:
     }
 
     uint32_t field_count() const {
-        return detail::mysql_ops::mysql_field_count(mysql_);
+        return field_count_;
     }
 
     uint64_t affected_rows() const {
-        return detail::mysql_ops::mysql_affected_rows(mysql_);
+        return affected_rows_;
     }
 
     bool expired() const {
@@ -190,7 +203,10 @@ public:
     }
 
 private:
-    native_mysql_type mysql_;
+	native_mysql_type mysql_;
+	uint64_t row_count_;
+	uint64_t affected_rows_;
+	uint32_t field_count_;
     std::weak_ptr<detail::result_set_type> result_set_;
     std::shared_ptr<values_type> values_;
     std::shared_ptr<fields_info_type> fields_info_;
