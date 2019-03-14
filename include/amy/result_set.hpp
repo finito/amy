@@ -48,7 +48,6 @@ public:
 		row_count_(0),
 		affected_rows_(0),
 		field_count_(0),
-        values_(new values_type),
         fields_info_(new fields_info_type)
     {}
 
@@ -64,7 +63,6 @@ public:
 
     explicit result_set(native_mysql_type mysql) :
 		mysql_(mysql),
-        values_(new values_type()),
 		row_count_(0),
 		affected_rows_(0),
 		field_count_(0),
@@ -120,17 +118,17 @@ public:
         }
 
         // Fetch rows.
-        values_->reserve(static_cast<size_t>(row_count_));
+        values_.reserve(static_cast<size_t>(row_count_));
         detail::row_type r;
 
         while ((r = ops::mysql_fetch_row(mysql, rs.get(), ec))) {
             unsigned long* lengths = ops::mysql_fetch_lengths(rs.get());
-            values_->push_back(row(rs.get(), r, lengths, fields_info_));
+            values_.push_back(row(rs.get(), r, lengths, fields_info_));
         }
 
         if (ec) {
 			row_count_ = 0;
-            values_.reset();
+            values_.clear();
             fields_info_.reset();
             result_set_.reset();
         } else {
@@ -145,19 +143,19 @@ public:
     }
 
     const_iterator begin() const {
-        return values_->begin();
+        return values_.begin();
     }
 
     const_iterator end() const {
-        return values_->end();
+        return values_.end();
     }
 
     const_reverse_iterator rbegin() const {
-        return values_->rbegin();
+        return values_.rbegin();
     }
 
     const_reverse_iterator rend() const {
-        return values_->rend();
+        return values_.rend();
     }
 
     bool empty() const {
@@ -172,12 +170,12 @@ public:
 
     row const& operator[](const_iterator::difference_type index) const {
         BOOST_ASSERT(!expired());
-        return values_->at(index);
+        return values_.at(index);
     }
 
     row const& at(const_iterator::difference_type index) const {
         BOOST_ASSERT(!expired());
-        return values_->at(index);
+        return values_.at(index);
     }
 
     native_type native() const {
@@ -208,7 +206,7 @@ private:
 	uint64_t affected_rows_;
 	uint32_t field_count_;
     std::weak_ptr<detail::result_set_type> result_set_;
-    std::shared_ptr<values_type> values_;
+    values_type values_;
     std::shared_ptr<fields_info_type> fields_info_;
 
 }; // class result_set
