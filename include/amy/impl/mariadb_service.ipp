@@ -126,7 +126,6 @@ inline AMY_SYSTEM_NS::error_code mariadb_service::query(
     return ec;
   }
 
-  impl.free_result();
   impl.first_result_stored = false;
 
   namespace ops = detail::mysql_ops;
@@ -171,9 +170,6 @@ inline result_set mariadb_service::store_result(
   namespace ops = amy::detail::mysql_ops;
 
   if (impl.first_result_stored) {
-    // Frees the last result set.
-    impl.free_result();
-
     if (!has_more_results(impl)) {
       ec = amy::error::no_more_results;
     } else {
@@ -189,12 +185,8 @@ inline result_set mariadb_service::store_result(
   }
 
   // Retrieves the next result set.
-  impl.last_result.reset(
-      ops::mysql_store_result(&impl.mysql, ec), result_set_deleter());
-
   result_set rs;
-  rs.assign(&impl.mysql, impl.last_result, ec);
-
+  rs.assign(&impl.mysql, ec);
   return rs;
 }
 
@@ -269,8 +261,6 @@ inline uint64_t mariadb_service::affected_rows(implementation_type& impl) {
 
 inline mariadb_service::implementation::implementation()
     : flags(amy::default_flags), initialized(false), first_result_stored(false),
-      last_result(static_cast<detail::result_set_handle>(nullptr),
-          result_set_deleter()),
       cancelation_token(static_cast<void*>(nullptr), noop_deleter()) {}
 
 inline mariadb_service::implementation::~implementation() { close(); }
@@ -285,7 +275,7 @@ inline void mariadb_service::implementation::close() {
   if (timer_) timer_->cancel();
 
   this->first_result_stored = false;
-  free_result();
+
   cancel();
 }
 
@@ -305,10 +295,6 @@ AMY_SYSTEM_NS::error_code mariadb_service::set_option(implementation_type& impl,
 
 inline void mariadb_service::cancel(implementation_type& impl) {
   impl.cancel();
-}
-
-inline void mariadb_service::implementation::free_result() {
-  this->last_result.reset();
 }
 
 inline void mariadb_service::implementation::cancel() {
@@ -573,7 +559,6 @@ public:
 
     switch (ec ? 2 : p.step) {
     case 0: {
-      p.impl_.free_result();
       p.impl_.first_result_stored = false;
 
       status = ops::mysql_real_query_start(
@@ -670,9 +655,6 @@ public:
       case S_ENTRY: {
 
         if (p.impl_.first_result_stored) {
-          // Frees the last result set.
-          p.impl_.free_result();
-
           mariadb_service& service =
               AMY_ASIO_NS::use_service<mariadb_service>(p.ioc_);
 
@@ -694,7 +676,6 @@ public:
       } /* FALLTHRU */
       case S_STORE_START: {
         p.step = S_STORE_START;
-        p.impl_.free_result();
 
         status = ops::mysql_store_result_start(&p.result_, &p.impl_.mysql, ec);
 
@@ -737,9 +718,7 @@ public:
       result_set rs;
       if (!ec) {
         // Retrieves the next result set.
-        p.impl_.last_result.reset(p.result_, result_set_deleter());
-
-        rs.assign(&p.impl_.mysql, p.impl_.last_result, ec);
+        rs.assign(&p.impl_.mysql, ec);
       } else {
         // If anything went wrong, invokes the user-defined handler with the
         // error code and an empty result set.
@@ -819,7 +798,6 @@ public:
       };
       switch (ec ? S_ERROR : p.step) {
       case S_ENTRY: {
-        p.impl_.free_result();
         p.impl_.first_result_stored = false;
 
         status = ops::mysql_real_query_start(&p.query_result_, &p.impl_.mysql,
@@ -832,7 +810,6 @@ public:
         p.step = S_STORE_START;
       } /* FALLTHRU */
       case S_STORE_START: {
-        p.impl_.free_result();
         p.impl_.first_result_stored = true;
 
         status = ops::mysql_store_result_start(&p.result_, &p.impl_.mysql, ec);
@@ -876,9 +853,7 @@ public:
       result_set rs;
       if (!ec) {
         // Retrieves the next result set.
-        p.impl_.last_result.reset(p.result_, result_set_deleter());
-
-        rs.assign(&p.impl_.mysql, p.impl_.last_result, ec);
+        rs.assign(&p.impl_.mysql, ec);
       } else {
         // If anything went wrong, invokes the user-defined handler with the
         // error code and an empty result set.
@@ -889,14 +864,6 @@ public:
     } // for(;;)
   }
 };
-
-inline void mariadb_service::result_set_deleter::operator()(void* p) {
-  namespace ops = detail::mysql_ops;
-
-  if (!!p) {
-    ops::mysql_free_result(static_cast<detail::result_set_handle>(p));
-  }
-}
 
 } // namespace amy
 

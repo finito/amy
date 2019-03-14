@@ -111,8 +111,6 @@ public:
   uint64_t affected_rows(implementation_type& impl);
 
 private:
-  struct result_set_deleter;
-
   detail::mysql_lib_init mysql_lib_init_;
 }; // class mariadb_service
 
@@ -130,9 +128,6 @@ struct mariadb_service::implementation {
   /// Indicates whether the first result set of the last query is already
   /// stored.
   bool first_result_stored;
-
-  /// The last stored result set of the last query.
-  std::shared_ptr<detail::result_set_type> last_result;
 
   /// Token used to cancel unfinished asynchronous operations.
   std::shared_ptr<void> cancelation_token;
@@ -156,18 +151,10 @@ struct mariadb_service::implementation {
   /// Closes the connection and revokes result set resource if any.
   void close();
 
-  /// Frees the result set resource if any.
-  void free_result();
-
   /// Cancels unfinished asynchronous operations.
   void cancel();
 
 }; // struct mariadb_service::implementation
-
-struct mariadb_service::result_set_deleter {
-  void operator()(void* p);
-
-}; // struct mariadb_service::result_set_deleter
 
 } // namespace amy
 

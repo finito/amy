@@ -163,7 +163,6 @@ mysql_service::query(implementation_type& impl,
         return ec;
     }
 
-    impl.free_result();
     impl.first_result_stored = false;
 
     namespace ops = detail::mysql_ops;
@@ -230,9 +229,6 @@ inline result_set mysql_service::store_result(implementation_type& impl,
     namespace ops = amy::detail::mysql_ops;
 
     if (impl.first_result_stored) {
-        // Frees the last result set.
-        impl.free_result();
-
         if (!has_more_results(impl)) {
             ec = amy::error::no_more_results;
         } else {
@@ -248,12 +244,8 @@ inline result_set mysql_service::store_result(implementation_type& impl,
     }
 
     // Retrieves the next result set.
-    impl.last_result.reset(ops::mysql_store_result(&impl.mysql, ec),
-                           result_set_deleter());
-
     result_set rs;
-    rs.assign(&impl.mysql, impl.last_result, ec);
-
+    rs.assign(&impl.mysql, ec);
     return rs;
 }
 
@@ -344,8 +336,6 @@ inline mysql_service::implementation::implementation() :
     flags(amy::default_flags),
     initialized(false),
     first_result_stored(false),
-    last_result(static_cast<detail::result_set_handle>(nullptr),
-                result_set_deleter()),
     cancelation_token(static_cast<void*>(nullptr), noop_deleter())
 {}
 
@@ -360,7 +350,7 @@ inline void mysql_service::implementation::close() {
     }
 
     this->first_result_stored = false;
-    free_result();
+
     cancel();
 }
 
@@ -382,10 +372,6 @@ mysql_service::set_option(implementation_type& impl,
 
 inline void mysql_service::cancel(implementation_type& impl) {
     impl.cancel();
-}
-
-inline void mysql_service::implementation::free_result() {
-    this->last_result.reset();
 }
 
 inline void mysql_service::implementation::cancel() {
@@ -471,7 +457,6 @@ void mysql_service::query_handler<QueryHandler>::operator()() {
         return;
     }
 
-    this->impl_.free_result();
     this->impl_.first_result_stored = false;
 
     AMY_SYSTEM_NS::error_code ec;
@@ -505,7 +490,6 @@ void mysql_service::queries_handler<QueriesHandler>::operator()() {
         return;
     }
 
-    this->impl_.free_result();
     this->impl_.first_result_stored = false;
 
 	static const std::string start_stmt = "START TRANSACTION";
@@ -573,9 +557,6 @@ void mysql_service::store_result_handler<StoreResultHandler>::operator()() {
     AMY_SYSTEM_NS::error_code ec;
 
     if (this->impl_.first_result_stored) {
-        // Frees the last result set.
-        this->impl_.free_result();
-
         mysql_service& service =
             AMY_ASIO_NS::use_service<mysql_service>(this->io_service_);
 
@@ -599,12 +580,8 @@ void mysql_service::store_result_handler<StoreResultHandler>::operator()() {
     }
 
     // Retrieves the next result set.
-    this->impl_.last_result.reset(
-            ops::mysql_store_result(&this->impl_.mysql, ec),
-            result_set_deleter());
-
     result_set rs;
-    rs.assign(&this->impl_.mysql, this->impl_.last_result, ec);
+    rs.assign(&this->impl_.mysql, ec);
 
     this->io_service_.post(std::bind(this->handler_, ec, rs));
 }
@@ -632,7 +609,6 @@ void mysql_service::query_result_handler<QueryResultHandler>::operator()() {
         return;
     }
 
-    this->impl_.free_result();
     this->impl_.first_result_stored = false;
 
     AMY_SYSTEM_NS::error_code ec;
@@ -651,22 +627,10 @@ void mysql_service::query_result_handler<QueryResultHandler>::operator()() {
         return;
     }
 
-	this->impl_.last_result.reset(
-			ops::mysql_store_result(&this->impl_.mysql, ec),
-			result_set_deleter());
-
 	result_set rs;
-	rs.assign(&this->impl_.mysql, this->impl_.last_result, ec);
+	rs.assign(&this->impl_.mysql, ec);
 
 	this->io_service_.post(std::bind(this->handler_, ec, rs));
-}
-
-inline void mysql_service::result_set_deleter::operator()(void* p) {
-    namespace ops = detail::mysql_ops;
-
-    if (!!p) {
-        ops::mysql_free_result(static_cast<detail::result_set_handle>(p));
-    }
 }
 
 } // namespace amy
