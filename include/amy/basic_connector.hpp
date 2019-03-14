@@ -136,8 +136,7 @@ public:
                             AMY_SYSTEM_NS::error_code& ec) {
         query(stmt, ec);
         if(ec)
-          return amy::result_set::empty_set(
-              &(this->get_implementation().mysql));
+          return amy::result_set::empty_set();
         return store_result(ec);
     }
 

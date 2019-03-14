@@ -44,7 +44,6 @@ public:
     typedef std::vector<field_info> fields_info_type;
 
     explicit result_set() :
-		mysql_(nullptr),
 		row_count_(0),
 		affected_rows_(0),
 		field_count_(0),
@@ -52,7 +51,6 @@ public:
     {}
 
     result_set(result_set const& other) :
-		mysql_(other.mysql_),
 		row_count_(other.row_count_),
 		affected_rows_(other.affected_rows_),
 		field_count_(other.field_count_),
@@ -61,16 +59,7 @@ public:
         fields_info_(other.fields_info_)
     {}
 
-    explicit result_set(native_mysql_type mysql) :
-		mysql_(mysql),
-		row_count_(0),
-		affected_rows_(0),
-		field_count_(0),
-        fields_info_(new fields_info_type)
-    {}
-
     result_set const& operator=(result_set const& other) {
-		mysql_ = other.mysql_;
 		row_count_ = other.row_count_,
 		affected_rows_ = other.affected_rows_,
 		field_count_ = other.field_count_,
@@ -92,7 +81,7 @@ public:
     AMY_SYSTEM_NS::error_code assign(
             native_mysql_type mysql,
             std::shared_ptr<detail::result_set_type> rs,
-            AMY_SYSTEM_NS::error_code& ec )
+            AMY_SYSTEM_NS::error_code& ec)
     {
         namespace ops = amy::detail::mysql_ops;
 
@@ -138,8 +127,8 @@ public:
         return ec;
     }
 
-    static result_set empty_set(native_mysql_type mysql) {
-        return result_set(mysql);
+    static result_set empty_set() {
+        return result_set();
     }
 
     const_iterator begin() const {
@@ -201,7 +190,6 @@ public:
     }
 
 private:
-	native_mysql_type mysql_;
 	uint64_t row_count_;
 	uint64_t affected_rows_;
 	uint32_t field_count_;

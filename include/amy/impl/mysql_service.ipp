@@ -244,7 +244,7 @@ inline result_set mysql_service::store_result(implementation_type& impl,
 
     if (ec) {
         // If anything went wrong, returns an empty result set.
-        return result_set::empty_set(&impl.mysql);
+        return result_set::empty_set();
     }
 
     // Retrieves the next result set.
@@ -265,7 +265,7 @@ void mysql_service::async_store_result(implementation_type& impl,
         this->get_io_service().post(
                 std::bind(handler,
                           amy::error::not_initialized,
-                          result_set::empty_set(&impl.mysql)));
+                          result_set::empty_set()));
     } else {
         if (!!work_io_service_) {
             start_work_thread();
@@ -285,7 +285,7 @@ void mysql_service::async_query_result(implementation_type& impl,
         this->get_io_service().post(
                 std::bind(handler,
 				          amy::error::not_initialized,
-						  result_set::empty_set(&impl.mysql)));
+						  result_set::empty_set()));
     } else {
         if (!!work_io_service_) {
             start_work_thread();
@@ -566,7 +566,7 @@ void mysql_service::store_result_handler<StoreResultHandler>::operator()() {
         this->io_service_.post(
                 std::bind(this->handler_,
                           AMY_ASIO_NS::error::operation_aborted,
-                          result_set::empty_set(&this->impl_.mysql)));
+                          result_set::empty_set()));
         return;
     }
 
@@ -594,7 +594,7 @@ void mysql_service::store_result_handler<StoreResultHandler>::operator()() {
         this->io_service_.post(
                 std::bind(this->handler_,
                           ec,
-                          result_set::empty_set(&this->impl_.mysql)));
+                          result_set::empty_set()));
         return;
     }
 
@@ -628,7 +628,7 @@ void mysql_service::query_result_handler<QueryResultHandler>::operator()() {
         this->io_service_.post(
                 std::bind(this->handler_,
                           AMY_ASIO_NS::error::operation_aborted,
-						  result_set::empty_set(&this->impl_.mysql)));
+						  result_set::empty_set()));
         return;
     }
 
@@ -647,7 +647,7 @@ void mysql_service::query_result_handler<QueryResultHandler>::operator()() {
         this->io_service_.post(
                 std::bind(this->handler_,
                           ec,
-                          result_set::empty_set(&this->impl_.mysql)));
+                          result_set::empty_set()));
         return;
     }
 

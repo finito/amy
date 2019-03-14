@@ -185,7 +185,7 @@ inline result_set mariadb_service::store_result(
 
   if (ec) {
     // If anything went wrong, returns an empty result set.
-    return result_set::empty_set(&impl.mysql);
+    return result_set::empty_set();
   }
 
   // Retrieves the next result set.
@@ -206,7 +206,7 @@ mariadb_service::async_store_result(
   if (!is_open(impl)) {
     AMY_ASIO_NS::post(this->get_io_service().get_executor(),
         boost::beast::bind_handler(handler, amy::error::not_initialized,
-            result_set::empty_set(&impl.mysql)));
+            result_set::empty_set()));
     return;
   }
 
@@ -222,7 +222,7 @@ mariadb_service::async_query_result(
   if (!is_open(impl)) {
     AMY_ASIO_NS::post(this->get_io_service().get_executor(),
         boost::beast::bind_handler(handler, amy::error::not_initialized,
-            result_set::empty_set(&impl.mysql)));
+            result_set::empty_set()));
     return;
   }
 
@@ -649,7 +649,7 @@ public:
 
   void operator()(boost::beast::error_code ec, int status) {
     auto& p = *p_;
-    auto rs = result_set::empty_set(&p.impl_.mysql);
+    auto rs = result_set::empty_set();
 
     using namespace amy::error;
     namespace ops = amy::detail::mysql_ops;
@@ -743,7 +743,7 @@ public:
       } else {
         // If anything went wrong, invokes the user-defined handler with the
         // error code and an empty result set.
-        rs = result_set::empty_set(&p.impl_.mysql);
+        rs = result_set::empty_set();
       }
       p_.invoke(ec, rs);
       return;
@@ -801,7 +801,7 @@ public:
 
   void operator()(boost::beast::error_code ec, int status) {
     auto& p = *p_;
-    auto rs = result_set::empty_set(&p.impl_.mysql);
+    auto rs = result_set::empty_set();
 
     using namespace amy::error;
     namespace ops = amy::detail::mysql_ops;
@@ -882,7 +882,7 @@ public:
       } else {
         // If anything went wrong, invokes the user-defined handler with the
         // error code and an empty result set.
-        rs = result_set::empty_set(&p.impl_.mysql);
+        rs = result_set::empty_set();
       }
       p_.invoke(ec, rs);
       return;
