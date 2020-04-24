@@ -4,7 +4,7 @@
 #include <amy/detail/mysql.hpp>
 #include <amy/detail/mysql_types.hpp>
 
-#include <boost/date_time/posix_time/posix_time.hpp>
+#include <chrono>
 
 namespace amy {
 
@@ -34,8 +34,8 @@ typedef std::string sql_text;
 typedef bool sql_bool;
 typedef bool sql_boolean;
 
-typedef boost::posix_time::ptime         sql_datetime;
-typedef boost::posix_time::time_duration sql_time;
+typedef std::chrono::system_clock::time_point sql_datetime;
+typedef std::chrono::system_clock::duration sql_time;
 
 } // namespace amy
 

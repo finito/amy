@@ -59,6 +59,7 @@ public:
 		field_count_(0),
 		result_set_(static_cast<detail::result_set_handle>(nullptr),
 			result_set_deleter()),
+        values_(new values_type),
         fields_info_(new fields_info_type)
     {}
 
@@ -119,17 +120,17 @@ public:
         }
 
         // Fetch rows.
-        values_.reserve(static_cast<size_t>(row_count_));
+        values_->reserve(static_cast<size_t>(row_count_));
         detail::row_type r;
 
         while ((r = ops::mysql_fetch_row(mysql, result_set_.get(), ec))) {
             unsigned long* lengths = ops::mysql_fetch_lengths(result_set_.get());
-            values_.push_back(row(result_set_.get(), r, lengths, fields_info_));
+            values_->push_back(row(result_set_.get(), r, lengths, fields_info_));
         }
 
         if (ec) {
 			row_count_ = 0;
-            values_.clear();
+            values_.reset();
             fields_info_.reset();
             result_set_.reset();
         } else {
@@ -144,19 +145,19 @@ public:
     }
 
     const_iterator begin() const {
-        return values_.begin();
+        return values_->begin();
     }
 
     const_iterator end() const {
-        return values_.end();
+        return values_->end();
     }
 
     const_reverse_iterator rbegin() const {
-        return values_.rbegin();
+        return values_->rbegin();
     }
 
     const_reverse_iterator rend() const {
-        return values_.rend();
+        return values_->rend();
     }
 
     bool empty() const {
@@ -168,11 +169,11 @@ public:
     }
 
     row const& operator[](const_iterator::difference_type index) const {
-        return values_.at(index);
+        return values_->at(index);
     }
 
     row const& at(const_iterator::difference_type index) const {
-        return values_.at(index);
+        return values_->at(index);
     }
 
     native_type native() const {
@@ -196,7 +197,7 @@ private:
 	uint64_t affected_rows_;
 	uint32_t field_count_;
     std::shared_ptr<detail::result_set_type> result_set_;
-    values_type values_;
+    std::shared_ptr<values_type> values_;
     std::shared_ptr<fields_info_type> fields_info_;
 
 }; // class result_set
